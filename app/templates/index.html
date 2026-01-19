@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量图像处理工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .folder-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px dashed #667eea;
+        }
+
+        .folder-section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            border: 2px solid #ced4da;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .input-group button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .input-group button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .options-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .options-section h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .option-item label {
+            font-size: 1em;
+            color: #495057;
+        }
+
+        .process-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .process-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            display: none;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .result-title {
+            font-size: 1.5em;
+            color: #495057;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .file-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            align-items: center;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .file-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .file-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .file-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .summary-section {
+            background: #d1ecf1;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .summary-label {
+            color: #0c5460;
+        }
+
+        .summary-value {
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📷 批量图像处理工具</h1>
+            <p>批量识别图片中的姓名和日期并自动重命名</p>
+        </div>
+
+        <div class="content">
+            <!-- 文件夹选择区域 -->
+            <div class="folder-section">
+                <h2>📁 选择目标文件夹</h2>
+                <div class="input-group">
+                    <input type="text" id="folderPath" placeholder="请输入文件夹路径或点击浏览选择">
+                    <button onclick="browseFolder()">浏览...</button>
+                </div>
+                <p style="color: #6c757d; font-size: 0.9em;">提示：选择包含需要处理图片的文件夹，支持 PNG、JPG、JPEG、BMP 格式</p>
+            </div>
+
+            <!-- 选项设置区域 -->
+            <div class="options-section">
+                <h2>⚙️ 处理选项</h2>
+                <div class="option-item">
+                    <input type="checkbox" id="overwrite" checked>
+                    <label for="overwrite">覆盖原文件（取消勾选将在原文件夹创建副本）</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="recursive" checked>
+                    <label for="recursive">递归处理子文件夹</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="preview" checked>
+                    <label for="preview">处理前预览结果</label>
+                </div>
+            </div>
+
+            <!-- 开始处理按钮 -->
+            <button class="process-btn" id="processBtn">开始批量处理</button>
+
+            <!-- 加载状态 -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在处理图片，请稍候...</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%">0%</div>
+                </div>
+            </div>
+
+            <!-- 错误信息 -->
+            <div class="error-message" id="errorMessage"></div>
+
+            <!-- 结果展示区域 -->
+            <div class="results-section" id="resultsSection">
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">处理结果</div>
+                    </div>
+                    <div class="file-list" id="fileList"></div>
+                    <div class="summary-section">
+                        <div class="summary-item">
+                            <span class="summary-label">处理文件数：</span>
+                            <span class="summary-value" id="totalFiles">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">成功处理：</span>
+                            <span class="summary-value" id="successFiles">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">处理失败：</span>
+                            <span class="summary-value" id="errorFiles">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const folderPath = document.getElementById('folderPath');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const progressFill = document.querySelector('.progress-fill');
+        const resultsSection = document.getElementById('resultsSection');
+        const fileList = document.getElementById('fileList');
+        const errorMessage = document.getElementById('errorMessage');
+        const totalFiles = document.getElementById('totalFiles');
+        const successFiles = document.getElementById('successFiles');
+        const errorFiles = document.getElementById('errorFiles');
+
+        function browseFolder() {
+            // 在实际应用中，这里可以使用文件选择对话框
+            // 由于浏览器安全限制，这里我们使用输入框手动输入路径
+            alert('请在输入框中手动输入文件夹路径');
+        }
+
+        processBtn.addEventListener('click', async () => {
+            const folder = folderPath.value.trim();
+            
+            if (!folder) {
+                showError('请选择目标文件夹');
+                return;
+            }
+
+            const options = {
+                overwrite: document.getElementById('overwrite').checked,
+                recursive: document.getElementById('recursive').checked,
+                preview: document.getElementById('preview').checked
+            };
+
+            loading.classList.add('active');
+            processBtn.disabled = true;
+            resultsSection.classList.remove('active');
+            hideError();
+
+            try {
+                const response = await fetch('/api/batch_process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        folder_path: folder,
+                        options: options
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || '处理失败');
+                }
+            } catch (error) {
+                showError('网络错误: ' + error.message);
+            } finally {
+                loading.classList.remove('active');
+                processBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            const files = data.files || [];
+            
+            totalFiles.textContent = files.length;
+            successFiles.textContent = files.filter(f => f.status === 'success').length;
+            errorFiles.textContent = files.filter(f => f.status === 'error').length;
+            
+            fileList.innerHTML = '';
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-name">${file.original_name}</div>
+                    <div class="file-status ${file.status}">
+                        ${file.status === 'success' ? `重命名为: ${file.new_name}` : file.error}
+                    </div>
+                `;
+                fileList.appendChild(fileItem);
+            });
+            
+            resultsSection.classList.add('active');
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('active');
+        }
+
+        // 模拟进度更新
+        function updateProgress(percent) {
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+        }
+    </script>
+</body>
+</html>
